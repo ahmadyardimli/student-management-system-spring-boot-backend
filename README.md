@@ -319,9 +319,12 @@ curl -i http://localhost:8080/     # 401 Unauthorized (expected)
 
 ## License
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ahmadyardimli/student-management-system-spring-boot-backend/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ahmadyardimli/student-management-system-spring-boot-backend/blob/main/LICENSE)  
+This project is licensed under the **MIT License** — see the
+[LICENSE](https://github.com/ahmadyardimli/student-management-system-spring-boot-backend/blob/main/LICENSE) file for details.
 
 ---
 
 If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**—not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+
 
