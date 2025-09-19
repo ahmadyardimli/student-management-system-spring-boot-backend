@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: sms_backend
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - smsnet
+
+networks:
+  smsnet:
+    external: true
