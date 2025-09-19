@@ -106,7 +106,7 @@ docker-compose*.yml
 **`.env.example`** (local template — do not commit secrets)
 
 ```
-db_sms_url=jdbc:mysql://host.docker.internal:3306/student_management_system_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+db_sms_url=jdbc:mysql://localhost:3306/<DB_NAME>?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 db_sms_username=root
 db_sms_password=CHANGE_ME
 sms_app_secret=CHANGE_ME
@@ -116,19 +116,113 @@ sms_app_secret=CHANGE_ME
 
 ## Security & token flow
 
-* **Login** returns:
+This backend uses a **stateless** auth model: a short-lived **JWT access token** plus a **rotating refresh token**. It’s intentionally **client-agnostic**. The same flow works for Android, web, or any HTTP client.
 
-  * **Access token (JWT)** — short TTL, sent as `Authorization: Bearer <token>`.
-  * **Refresh token** — rotated on use, server validates & issues a new pair.
-* **Android client**:
+### What the server issues & stores
 
-  * Adds the access token via an `AuthInterceptor`.
-  * On `401`, a `TokenAuthenticator` calls `/auth/refresh`, saves new tokens, retries **once**.
-  * If refresh fails, it broadcasts a **single** session-expired event and navigates to Login.
-  * Tokens are stored with **EncryptedSharedPreferences** (AES-GCM), plus safe migration from any legacy store.
-* **Backend**: stateless auth, role-based routes (e.g., `/admin/**`, `/user/**`, `/auth/**`), consistent `ApiError` payloads.
+* **Access token (JWT)**
 
----
+  * Short TTL (minutes), signed.
+  * Carries `sub` (user id) and authorities/roles.
+  * Used on protected routes via `Authorization: Bearer <access>`.
+
+* **Refresh token (opaque)**
+
+  * Random, long(er) TTL.
+  * **Stored hashed** in the database (never in plaintext).
+  * **Rotated on every refresh**: old token becomes invalid the moment a new pair is issued.
+
+### Core endpoints
+
+* **`POST /auth/login`**
+
+  * Validates credentials.
+  * Returns `{ accessToken, refreshToken }`.
+  * Persists a **hashed** refresh token record (user, expiry, fingerprint/metadata).
+
+* **`POST /auth/refresh`**
+
+  * Accepts the current refresh token.
+  * Verifies it against the **hashed** record and checks expiry/revocation.
+  * **Rotates**: invalidates the old refresh, issues **new `{ access, refresh }`**, saves the new hashed refresh.
+  * Replay protection: presenting an **already-used** refresh is rejected (can optionally revoke the session family).
+
+* **`POST /auth/logout`**
+
+  * Invalidates the active refresh token (server-side record).
+
+### Request protection
+
+* **`JwtAuthenticationFilter`** validates `Authorization: Bearer <access>` on protected routes.
+* On failure, **401** with a structured `ApiError` (stable shape for all errors).
+* **Role gates** (`/admin/**`, `/user/**`, etc.) enforced via Spring Security annotations/config.
+
+### Error model (consistent responses)
+
+All auth errors (expired/invalid token, forbidden, bad refresh) return a JSON `ApiError` with:
+
+* `timestamp`
+* `status` (HTTP)
+* `code` (machine-readable)
+* `message` (human-readable)
+* Optional `details`
+
+This lets any client (mobile or web) implement uniform handling.
+
+### Example payloads
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{ "username": "<user>", "password": "<pass>" }
+
+-- 200 --
+{
+  "accessToken": "<JWT_ACCESS>",
+  "refreshToken": "<OPAQUE_REFRESH>"
+}
+```
+
+```http
+POST /auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "<OPAQUE_REFRESH>" }
+
+-- 200 --
+{
+  "accessToken": "<NEW_JWT_ACCESS>",
+  "refreshToken": "<NEW_OPAQUE_REFRESH>"
+}
+```
+
+```http
+GET /user/profile
+Authorization: Bearer <JWT_ACCESS>
+```
+
+> Hitting a protected route without/with a bad token returns **401**; that’s expected and indicates the app is up and secured.
+
+### Security defaults & hardening
+
+* **Stateless**: no server session; access is self-contained in JWT.
+* **Hash refresh tokens** at rest; never log tokens.
+* **One-time rotation** on refresh prevents replay if a token leaks.
+* **Least privilege** with role checks and method security.
+* **HTTPS** in production; strict CORS for web clients.
+* Small **clock-skew** tolerance on JWT verification.
+* Admin actions (password change, manual revoke) can invalidate outstanding refresh tokens.
+
+### Client notes (brief)
+
+* Any client (Android, iOS, **web**) can use this flow:
+
+  * Save the **refresh** securely (e.g., encrypted storage, HTTP-only cookie for web).
+  * Send the **access** as `Authorization: Bearer …`.
+  * On **401**, call `/auth/refresh` **once**, replace both tokens, retry the original request once.
+* Because the backend is **stateless** and uses standard HTTP/JSON, swapping the UI (mobile → web) requires **no backend changes**.
+
 
 ## Data layer (JPA/Hibernate)
 
@@ -326,6 +420,7 @@ This project is licensed under the **MIT License** — see the
 ---
 
 If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**—not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+
 
 
 
