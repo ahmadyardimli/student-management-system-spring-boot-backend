@@ -410,7 +410,7 @@ curl -i http://localhost:8080/     # 401 Unauthorized (expected)
 
 This walk-through shows how protected endpoints, the **access token (AT)**, and the **rotating refresh token (RT)** behave.
 
-### 0) Token lifetimes used in this demo
+### 1. Token lifetimes used in this demo
 
 ```properties
 sms.expires.in=600000            # 10 minutes (milliseconds)
@@ -421,7 +421,7 @@ Run the backend with the config above.
 
 ---
 
-### 1) Try a protected endpoint without auth → `401`
+### 2. Try a protected endpoint without auth → `401`
 
 * **GET** `http://localhost:8080/admin/users/students`
 * No body for GET. You should see **401 Unauthorized** (Spring Security blocks it).
@@ -430,7 +430,7 @@ Run the backend with the config above.
 
 ---
 
-### 2) Prepare login request (username/password)
+### 3. Prepare login request (username/password)
 
 * **POST** `http://localhost:8080/auth/login`
 * **Body → raw → JSON**:
@@ -443,7 +443,7 @@ Run the backend with the config above.
 
 ---
 
-### 3) Login → receive tokens
+### 4. Login → receive tokens
 
 The response returns both tokens. **Copy the refreshToken** somewhere—you’ll need it later.
 
@@ -451,7 +451,7 @@ The response returns both tokens. **Copy the refreshToken** somewhere—you’ll
 
 ---
 
-### 4) Add the access token to headers
+### 5. Add the access token to headers
 
 * Add header `Authorization: Bearer <accessToken>` (use the token from the login response).
 
@@ -459,7 +459,7 @@ The response returns both tokens. **Copy the refreshToken** somewhere—you’ll
 
 ---
 
-### 5) Call the students endpoint again → success
+### 6. Call the students endpoint again → success
 
 * **GET** `http://localhost:8080/admin/users/students`
 * With the `Authorization` header set, you now get data (no 401).
@@ -468,7 +468,7 @@ The response returns both tokens. **Copy the refreshToken** somewhere—you’ll
 
 ---
 
-### 6) After AT expires → `401` on the same call
+### 7. After AT expires → `401` on the same call
 
 Wait \~10 minutes (AT TTL), then call the same endpoint again. You’ll get **401 Unauthorized** because the AT expired.
 
@@ -476,7 +476,7 @@ Wait \~10 minutes (AT TTL), then call the same endpoint again. You’ll get **40
 
 ---
 
-### 7) Use the refresh token to get a new pair
+### 8. Use the refresh token to get a new pair
 
 * **POST** `http://localhost:8080/auth/refresh`
 * **Body → raw → JSON**:
@@ -491,7 +491,7 @@ You receive a **new** `{ accessToken, refreshToken }` (RT rotates).
 
 ---
 
-### 8) Call students with the **new** access token → success
+### 9. Call students with the **new** access token → success
 
 Replace the `Authorization` header with the new AT and call the endpoint again.
 
@@ -499,7 +499,7 @@ Replace the `Authorization` header with the new AT and call the endpoint again.
 
 ---
 
-### 9) If the refresh token also expires → refresh fails
+### 10. If the refresh token also expires → refresh fails
 
 After \~20 minutes (RT TTL), a refresh attempt returns:
 
@@ -528,6 +528,7 @@ This project is licensed under the **MIT License** — see the
 ---
 
 If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**, not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+
 
 
 
