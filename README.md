@@ -1,7 +1,3 @@
-Got it — I kept everything exactly the same and only adjusted the JDBC URL placeholders to clearly distinguish **local** vs **production**.
-
----
-
 # student-management-system-spring-boot-backend
 
 Production-ready Spring Boot 3 backend for Student Management — **Java 17**, **Docker**, **MySQL 8**, **JPA/Hibernate**, **JWT (access + rotating refresh)**, and configuration via **AWS Secrets Manager** on **EC2**.
