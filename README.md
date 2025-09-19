@@ -147,10 +147,6 @@ This backend uses a **stateless** auth model: a short-lived **JWT access token**
   * **Rotates**: invalidates the old refresh, issues **new `{ access, refresh }`**, saves the new hashed refresh.
   * Replay protection: presenting an **already-used** refresh is rejected (can optionally revoke the session family).
 
-* **`POST /auth/logout`**
-
-  * Invalidates the active refresh token (server-side record).
-
 ### Request protection
 
 * **`JwtAuthenticationFilter`** validates `Authorization: Bearer <access>` on protected routes.
@@ -420,6 +416,7 @@ This project is licensed under the **MIT License** — see the
 ---
 
 If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**—not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+
 
 
 
