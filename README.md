@@ -209,7 +209,7 @@ aws secretsmanager create-secret \
   --region "$REGION" \
   --name prod/sms/backend \
   --secret-string '{
-    "db_sms_url":"jdbc:mysql://zeka_tm_qebele_mysql_db:3306/student_management_system_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+    "db_sms_url":"jdbc:mysql://<DB_CONTAINER_NAME>:<DB_PORT>/<DB_NAME>?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
     "db_sms_username":"<db-user>",
     "db_sms_password":"<db-pass>",
     "sms_app_secret":"<jwt-secret>"
@@ -261,7 +261,7 @@ curl -i http://localhost:8080/     # 401 Unauthorized (expected)
 * In **Run/Debug Configuration → Environment variables**, set:
 
   ```
-  db_sms_url=jdbc:mysql://localhost:3306/student_management_system_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+  db_sms_url=jdbc:mysql://<DB_CONTAINER_NAME>:<DB_PORT>/<DB_NAME>?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
   db_sms_username=<local-user>
   db_sms_password=<local-pass>
   sms_app_secret=<any-strong-string>
@@ -326,5 +326,6 @@ This project is licensed under the **MIT License** — see the
 ---
 
 If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**—not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+
 
 
