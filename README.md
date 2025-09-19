@@ -406,6 +406,118 @@ curl -i http://localhost:8080/     # 401 Unauthorized (expected)
 3. Run the app; expect `401` on `/`.
 
 ---
+## Postman demo: access & refresh token flow (step-by-step)
+
+This walk-through shows how protected endpoints, the **access token (AT)**, and the **rotating refresh token (RT)** behave.
+
+### 0) Token lifetimes used in this demo
+
+```properties
+sms.expires.in=600000            # 10 minutes (milliseconds)
+sms.refresh.token.expires.in=1200 # 20 minutes (seconds)
+```
+
+Run the backend with the config above.
+
+---
+
+### 1) Try a protected endpoint without auth → `401`
+
+* **GET** `http://localhost:8080/admin/users/students`
+* No body for GET. You should see **401 Unauthorized** (Spring Security blocks it).
+
+![get\_all\_students\_without\_auth\_at\_the\_beginning](docs/postman/get_all_students_without_auth_at_the_beginning.png)
+
+---
+
+### 2) Prepare login request (username/password)
+
+* **POST** `http://localhost:8080/auth/login`
+* **Body → raw → JSON**:
+
+```json
+{ "username": "main_admin", "password": "admin" }
+```
+
+![main\_admin\_log\_in\_setup\_before\_send\_request](docs/postman/main_admin_log_in_setup_before_send_request.png)
+
+---
+
+### 3) Login → receive tokens
+
+The response returns both tokens. **Copy the refreshToken** somewhere—you’ll need it later.
+
+![main\_admin\_login\_response](docs/postman/main_admin_login_response.png)
+
+---
+
+### 4) Add the access token to headers
+
+* Add header `Authorization: Bearer <accessToken>` (use the token from the login response).
+
+![header\_setup\_with\_auth](docs/postman/header_setup_with_auth.png)
+
+---
+
+### 5) Call the students endpoint again → success
+
+* **GET** `http://localhost:8080/admin/users/students`
+* With the `Authorization` header set, you now get data (no 401).
+
+![get\_all\_students\_response\_after\_auth](docs/postman/get_all_students_response_after_auth.png)
+
+---
+
+### 6) After AT expires → `401` on the same call
+
+Wait \~10 minutes (AT TTL), then call the same endpoint again. You’ll get **401 Unauthorized** because the AT expired.
+
+![trying\_to\_get\_students\_after\_at\_axpired](docs/postman/trying_to_get_students_after_at_axpired.png)
+
+---
+
+### 7) Use the refresh token to get a new pair
+
+* **POST** `http://localhost:8080/auth/refresh`
+* **Body → raw → JSON**:
+
+```json
+{ "refreshToken": "<your-previous-refresh-token>" }
+```
+
+You receive a **new** `{ accessToken, refreshToken }` (RT rotates).
+
+![updated\_at\_after\_refresh\_request](docs/postman/updated_at_after_refresh_request.png)
+
+---
+
+### 8) Call students with the **new** access token → success
+
+Replace the `Authorization` header with the new AT and call the endpoint again.
+
+![get\_all\_studetns\_after\_updatedAT\_using\_refresh\_token](docs/postman/get_all_studetns_after_updatedAT_using_refresh_token.png)
+
+---
+
+### 9) If the refresh token also expires → refresh fails
+
+After \~20 minutes (RT TTL), a refresh attempt returns:
+
+```json
+{ "code": "token_expired", "message": "Refresh token expired." }
+```
+
+![refresh\_token\_response\_if\_rt\_is\_expired](docs/postman/refresh_token_response_if_rt_is_expired.png)
+
+---
+
+**Notes**
+
+* Backend stores refresh tokens **hashed** and **rotates** them on every refresh; old RTs are invalid.
+* Real clients (Android, web, iOS) can refresh automatically on `401`.
+
+
+---
 
 ## License
 
@@ -415,7 +527,8 @@ This project is licensed under the **MIT License** — see the
 
 ---
 
-If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**—not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+If you’re reviewing this as part of my portfolio: this project is about **secure, realistic backend engineering**, not just code that runs, but code that **deploys safely**, **manages secrets correctly**, and **treats tokens and sessions with care**.
+
 
 
 
